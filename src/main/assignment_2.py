@@ -69,16 +69,13 @@ def apply_div_dif(matrix: np.array):
                 continue
             
             # get left cell entry
-            left: float = matrix[i-1][j]
+            left: float = matrix[i][j-1]
             # get diagonal left entry
             diagonal_left: float = matrix[i-1][j-1]
             # order of numerator is SPECIFIC.
             numerator: float = left - diagonal_left
             # denominator is current i's x_val minus the starting i's x_val....
-            if matrix[0][j] != matrix[0][j-1]:
-                denominator = matrix[0][j] - matrix[0][j-1]
-            else:
-                denominator = matrix[0][j] - matrix[0][j-2]
+            denominator = matrix[i][0] - matrix[i-j+1][0]
             # something save into matrix
             operation = numerator / denominator
             matrix[i][j] = operation
@@ -94,20 +91,20 @@ def hermite_interpolation():
     matrix = np.zeros((6, 6))
     # populate x values (make sure to fill every TWO rows)
     for x in range(0, num_of_points):
-        matrix[0][x] = x_points[x//2]
+        matrix[x][0] = x_points[x//2]
     
     # prepopulate y values (make sure to fill every TWO rows)
     for x in range(0, num_of_points):
-        matrix[1][x] = y_points[x//2]
+        matrix[x][1] = y_points[x//2]
 
     # prepopulate with derivates (make sure to fill every TWO rows. starting row CHANGES.)
     for x in range(0, num_of_points):
         if x == 0:
-            matrix[2][x] = 0.0
+            matrix[x][2] = 0.0
         elif x%2 == 1:
-            matrix[2][x] = slopes[x//2]
+            matrix[x][2] = slopes[x//2]
         else:
-            matrix[2][x] = (matrix[1][x] - matrix[1][x-1]) / (matrix[0][x] - matrix[0][x-1])
+            matrix[x][2] = (matrix[x][1] - matrix[x-1][1]) / (matrix[x][0] - matrix[x-1][0])
 
     filled_matrix = apply_div_dif(matrix)
     print(filled_matrix)
@@ -135,3 +132,61 @@ if __name__ == "__main__":
     print()
 
     hermite_interpolation()
+    print()
+
+    x_points = [2, 5, 8, 10]
+    y_points = [3, 5, 7, 9]
+    n = 3
+    h = np.zeros(n)
+    a = np.array(y_points)
+    for i in range(0, n):
+        h[i] = x_points[i+1] - x_points[i]
+
+    A = np.zeros((n+1, n+1))
+    A[0][0] = 1
+    A[n][n] = 1
+
+    for i in range(1, n):
+        A[i][i] = 2 * (h[i-1] + h[i])
+
+    for i in range(0, n-1):
+        A[i+1][i] = h[i]
+    
+    for i in range(1, n):
+        A[i][i+1] = h[i]
+
+    print(A)
+    print()
+    
+    b = np.zeros(n+1)
+    for i in range(1, n):
+        b[i] = ((3.0/h[i]) * (a[i+1]-a[i])) - ((3.0/h[i-1]) * (a[i]-a[i-1]))
+
+    print(b)
+    print() 
+
+    c = np.zeros(n+1)
+    c[n] = 0
+
+    l = np.zeros(n+1)
+    u = np.zeros(n+1)
+    z = np.zeros(n+1)
+
+    l[0] = 1
+    u[0] = 0
+    z[0] = 0
+
+    for i in range(1, n):
+        l[i] = 2*(x_points[i+1] - x_points[i-1]) - (h[i-1]*u[i-1])
+        u[i] = h[i]/l[i]
+        z[i] = (b[i] - (h[i-1]*z[i-1]))/l[i]
+
+    l[n] = 1
+    z[n] = 0
+    c[n] = 0
+
+    for j in range(n-1, -1, -1):
+        c[j] = z[j] - (u[j]*c[j+1])
+
+    print(c)
+
